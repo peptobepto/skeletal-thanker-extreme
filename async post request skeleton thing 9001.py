@@ -1,6 +1,8 @@
 import aiohttp
 import asyncio
+import threading
 import time
+
 # Define the headers for the POST request
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
@@ -34,25 +36,27 @@ async def send_request(session, url, i):
     except Exception as e:
         print("An error occurred while sending the request:", e)
 
-# Function to automate sending requests concurrently
-reqs = 0
-async def automate_requests_concurrently(url):
-    async with aiohttp.ClientSession() as session:
-        while True:
-            tasks = [send_request(session, url, i) for i in range(0, reqs)]
-            await asyncio.gather(*tasks)
+# Function to automate sending requests concurrently using threading
+def automate_requests_concurrently(url, num_requests):
+    async def run_requests():
+        async with aiohttp.ClientSession() as session:
+            for i in range(num_requests):
+                await send_request(session, url, i)
 
-#run the function and get user input
+    asyncio.run(run_requests())
+
+# Run the function and get user input
 if __name__ == "__main__":
     url = "https://xn--rl8hlm.tk/thank"
-    reqs = int(input("how many concurrent requests do you want to send?"))
-    print("Cooking up these requests in.")
-    time.sleep(1)
-    print("3")
-    time.sleep(1)
-    print("2")
-    time.sleep(1)
-    print("1")
-    asyncio.run(automate_requests_concurrently(url))
 
-#is simple
+    num_threads = int(input("How many threads do you want to use? "))
+    num_requests_per_thread = int(input("How many requests per iteration per thread? "))
+
+    threads = []
+    for _ in range(num_threads):
+        thread = threading.Thread(target=automate_requests_concurrently, args=(url, num_requests_per_thread))
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
